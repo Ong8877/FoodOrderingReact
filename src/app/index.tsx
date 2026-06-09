@@ -1,41 +1,36 @@
 // src/app/index.tsx
 
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
   ActivityIndicator,
   Alert,
-  StyleSheet,
+  FlatList,
+  Image,
   Platform,
   StatusBar,
+  StyleSheet,
+  Text,
   TextInput,
-  Image
+  View
 } from 'react-native';
 
 // Synchronized Data Imports
-import { FOOD_DATA, FoodItem, getGlobalCart, updateGlobalCart } from '../data/foodData';
 import CategoryBadge from '../components/CategoryBadge';
-
-// 💡 BULLETPROOF IMPORT STRATEGY:
-// This reads the entire component module file to handle both default and named exports safely.
-import * as FoodCardModule from '../components/FoodCard';
-import * as OrderModalModule from '../components/OrderModal';
-
-// Fallback validation mechanics to bypass missing 'default' export keywords automatically
-const FoodCard = FoodCardModule.default || (FoodCardModule as any).FoodCard;
-const OrderModal = OrderModalModule.default || (OrderModalModule as any).OrderModal;
+import FoodCard from '../components/FoodCard';
+import OrderModal from '../components/OrderModal';
+import { FOOD_DATA, FoodItem, getGlobalCart, updateGlobalCart } from '../data/foodData';
 
 export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [filteredData, setFilteredData] = useState<FoodItem[]>([]);
 
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedFoodItem, setSelectedFoodItem] = useState<FoodItem | null>(null);
 
+  // Simulation effect setup tracker
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilteredData(FOOD_DATA);
@@ -48,6 +43,7 @@ export default function HomeScreen() {
   const filterFoodMenu = (search: string, category: string) => {
     let rawData = FOOD_DATA;
 
+    // Filters down item sets by chosen category tags accurately
     if (category !== 'All') {
       rawData = rawData.filter(item => item.category === category);
     }
@@ -105,7 +101,7 @@ export default function HomeScreen() {
 
     Alert.alert(
       "Added to Basket",
-      `${quantity}x ${selectedFoodItem.name} has been pushed to your shopping tray successfully! 🛒`
+      `${quantity}x ${selectedFoodItem.name} has been added to your cart successfully! 🛒`
     );
   };
 

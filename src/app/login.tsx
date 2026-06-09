@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState<string>('');
   const router = useRouter();
 
-  // 💡 AUTOMATED FLUSH: Automatically clears credentials whenever this screen gains active view focus
+  //  AUTOMATED FLUSH: Automatically clears credentials whenever this screen gains active view focus
   useFocusEffect(
     useCallback(() => {
       setUsername('');
@@ -44,11 +44,25 @@ export default function LoginScreen() {
     }
   };
 
+
   if (isLoading) {
     return (
-      <View style={styles.centerContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" translucent={false} />
-        <ActivityIndicator size="large" color="#D35400" />
+      <View style={styles.splashLoadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+
+
+        <View style={styles.splashBrandBox}>
+          <Image
+            source={require('../../assets/images/logoapp.png')}
+            style={styles.splashLogoImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.splashLogoText}>NomNom</Text>
+          <Text style={styles.splashSubtext}>Delicious campus delivery straight to you</Text>
+        </View>
+
+
+        <ActivityIndicator size="large" color="#D35400" style={styles.splashSpinner} />
       </View>
     );
   }
@@ -104,11 +118,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     justifyContent: 'center',
   },
-  centerContainer: {
+
+  splashLoadingContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 60,
+  },
+  splashBrandBox: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    width: '100%',
+  },
+  splashLogoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+  },
+  splashLogoText: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+    marginTop: 16,
+  },
+  splashSubtext: {
+    fontSize: 14,
+    color: '#7F8C8D',
+    marginTop: 6,
+  },
+  splashSpinner: {
+    marginTop: 20,
   },
   brandWrapper: {
     alignItems: 'center',

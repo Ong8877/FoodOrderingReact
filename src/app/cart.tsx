@@ -4,144 +4,136 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
+  ScrollView,
   Pressable,
-  Alert,
   Image,
-  Platform,      // Added to implement cross-platform padding checks
-  StatusBar     // Added to handle device height safely instead of SafeAreaView
+  Alert,
+  StatusBar
 } from 'react-native';
-// Use expo-router navigation hooks to listen safely to screen focusing events without compile errors
-import { useNavigation } from 'expo-router';
-
-// 💡 FIX 1: Removed the nonexistent 'clearGlobalCart' and imported 'updateGlobalCart' instead
-import { getGlobalCart, updateGlobalCart, CartItem } from '../data/foodData';
+// Import only the existing getGlobalCart method from data store layer
+import { getGlobalCart, CartItem } from '../data/foodData';
 
 export default function CartScreen() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const navigation = useNavigation();
 
-  // Helper function to fetch the latest variables from global active basket storage
-  const syncCartStateData = () => {
-    setCartItems(getGlobalCart());
+  // Load the global basket repository state context dynamically
+  const loadCart = () => {
+    const currentCart = getGlobalCart();
+    setCartItems([...currentCart]);
   };
 
-  // Automated Synchronization: Listens to the screen focus lifecycle event
-  // It triggers automatically whenever the user clicks on the "Carts" tab item
   useEffect(() => {
-    // Synchronize data immediately on initial mounting sequence
-    syncCartStateData();
+    loadCart();
+    // Keep internal local rendering synchronized with state background threads
+    const interval = setInterval(loadCart, 800);
+    return () => clearInterval(interval);
+  }, []);
 
-    // Attach a listener to re-sync state data every single time the screen comes into active focus view
-    const unsubscribe = navigation.addListener('focus', () => {
-      syncCartStateData();
-    });
+  // Removes a specific unique item configuration block out of the global cart array safely
+  const handleDeleteItem = (indexToDelete: number) => {
+    const currentCart = getGlobalCart();
 
-    // Clean up event listener tracking on unmount phase
-    return unsubscribe;
-  }, [navigation]);
-
-  // Math metrics to determine total final cost dynamically
-  const calculateTotal = () => {
-    return cartItems.reduce((sum, item) => sum + (item.food.price * item.quantity), 0);
+    if (indexToDelete >= 0 && indexToDelete < currentCart.length) {
+      // Directly slice the target item out of the global referenced mutable data array
+      currentCart.splice(indexToDelete, 1);
+      // Synchronize and trigger UI reactive render tree refresh instantly
+      setCartItems([...currentCart]);
+    }
   };
 
-  // Requirement Check: Alert API execution flow simulating payment capture checkout safely
-  const handleMakePayment = () => {
-    if (cartItems.length === 0) return;
+  const calculateTotal = () => {
+    return cartItems.reduce((sum, item) => sum + item.food.price * item.quantity, 0);
+  };
 
-    const finalAmount = calculateTotal().toFixed(2);
+  const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      Alert.alert('Empty Basket', 'Please add some local cravings before checking out.');
+      return;
+    }
 
-    Alert.alert(
-      "Confirm Payment",
-      `Proceed to pay RM ${finalAmount} for your order via Online Banking?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Pay Now",
-          onPress: () => {
-            // Transaction completion logic sequence
-            Alert.alert(
-              "Payment Success 🎉",
-              "Your transaction was processed! Your food is being prepared by the campus kitchen now.",
-              [
-                {
-                  text: "OK",
-                  onPress: () => {
-                    // 💡 FIX 2: Replaced clearGlobalCart() with updateGlobalCart([]) to safely empty the cart data array
-                    updateGlobalCart([]); // Wipes global storage variables state securely
-                    setCartItems([]);     // Flushes current presentation screen presentation data cache layouts
-                  }
-                }
-              ]
-            );
-          }
+    Alert.alert('Success', 'Payment Successful! Your food is being prepared.', [
+      {
+        text: 'OK',
+        onPress: () => {
+          // Reset global mutable array length to 0 to safely flush cart state upon checkout
+          const currentCart = getGlobalCart();
+          currentCart.length = 0;
+          setCartItems([]);
         }
-      ]
-    );
+      }
+    ]);
   };
 
   return (
-    // Replaced SafeAreaView wrapper completely with standard View container layer
     <View style={styles.container}>
-      {/* Page Title Block Header section */}
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+
+      {/* Screen Title Header */}
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View>
-            <Text style={styles.headerTitle}>My Basket</Text>
-            <Text style={styles.headerSubtitle}>Review and checkout your cravings</Text>
-          </View>
-        </View>
+        <Text style={styles.headerTitle}>My Basket</Text>
+        <Text style={styles.headerSubtitle}>Review and checkout your cravings</Text>
       </View>
 
-      {/* Conditional rendering for empty vs populated lists */}
+      {/* Conditional Rendering Base Ecosystem */}
       {cartItems.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🛒</Text>
-          <Text style={styles.emptyText}>Your Basket is Empty</Text>
-          <Text style={styles.emptySubtext}>Head over to the Food section to fill up your tray and explore our menu!</Text>
+          <Text style={styles.emptyEmoji}>🛒</Text>
+          <Text style={styles.emptyText}>Your basket is empty</Text>
         </View>
       ) : (
-        <>
-          {/* Scrollable list displaying items, quantity scales, and specific text remarks instructions */}
-          <FlatList
-            data={cartItems}
-            keyExtractor={(item, index) => `${item.food.id}-${index}`}
-            contentContainerStyle={styles.listContainer}
-            renderItem={({ item }) => (
-              <View style={styles.cartCard}>
-                <Image source={{ uri: item.food.image }} style={styles.cardImage} />
-                <View style={styles.cardDetails}>
-                  <Text style={styles.foodName}>{item.food.name}</Text>
-                  <Text style={styles.foodRemarks} numberOfLines={1}>
-                    📝 Note: {item.remarks}
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
+          {cartItems.map((item, index) => (
+            <View key={`${item.food.id}-${index}`} style={styles.cartCard}>
+              <Image source={{ uri: item.food.image }} style={styles.foodImage} />
+
+              <View style={styles.itemMetaBox}>
+                <Text style={styles.foodName}>{item.food.name}</Text>
+
+                {/* Special Instructions Note Tag node */}
+                <View style={styles.remarksBadge}>
+                  <Text style={styles.remarksText} numberOfLines={1}>
+                    📝 Note: {item.remarks.trim() || 'No special instructions'}
                   </Text>
-                  <View style={styles.cardFooter}>
-                    <Text style={styles.foodPrice}>
-                      RM {item.food.price.toFixed(2)} x {item.quantity}
-                    </Text>
-                    <Text style={styles.itemSubtotal}>
-                      RM {(item.food.price * item.quantity).toFixed(2)}
-                    </Text>
-                  </View>
                 </View>
+
+                <Text style={styles.quantityMultiplier}>
+                  RM {item.food.price.toFixed(2)} x {item.quantity}
+                </Text>
               </View>
-            )}
-          />
 
-          {/* Persistent checkout summary anchor calculations card at base */}
-          <View style={styles.checkoutFooter}>
-            <View style={styles.priceSummaryRow}>
-              <Text style={styles.totalLabel}>Total Price:</Text>
-              <Text style={styles.totalAmount}>RM {calculateTotal().toFixed(2)}</Text>
+              {/* Layout wrapper mapping for rightmost action row group positioning */}
+              <View style={styles.actionRightBlock}>
+                <Text style={styles.itemTotalCost}>
+                  RM {(item.food.price * item.quantity).toFixed(2)}
+                </Text>
+
+                {/* Trash Icon Deletion CTA Action Node Button */}
+                <Pressable
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteItem(index)}
+                  hitSlop={12}
+                >
+                  <Text style={styles.deleteIconText}>🗑️</Text>
+                </Pressable>
+              </View>
             </View>
+          ))}
+        </ScrollView>
+      )}
 
-            <Pressable style={styles.paymentButton} onPress={handleMakePayment}>
-              <Text style={styles.paymentButtonText}>Make Payment</Text>
-            </Pressable>
+      {/* Sticky Structural Operational Footer Section */}
+      {cartItems.length > 0 && (
+        <View style={styles.footerContainer}>
+          <View style={styles.totalPriceRow}>
+            <Text style={styles.totalLabel}>Total Price:</Text>
+            <Text style={styles.totalValue}>RM {calculateTotal().toFixed(2)}</Text>
           </View>
-        </>
+
+          <Pressable style={styles.checkoutButton} onPress={handleCheckout}>
+            <Text style={styles.checkoutButtonText}>Make Payment</Text>
+          </Pressable>
+        </View>
       )}
     </View>
   );
@@ -150,17 +142,14 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-    // Dynamic top layout calculation padding injection to skip phone status notch systems gracefully
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 44,
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#F0F3F4',
   },
   headerTitle: {
     fontSize: 24,
@@ -172,111 +161,122 @@ const styles = StyleSheet.create({
     color: '#7F8C8D',
     marginTop: 2,
   },
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    marginBottom: 6,
-  },
-  emptySubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#95A5A6',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  listContainer: {
-    padding: 16,
+    fontWeight: '500',
   },
   cartCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: 'row',
-    marginBottom: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  cardImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 8,
+  foodImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    backgroundColor: '#F0F3F4',
   },
-  cardDetails: {
+  itemMetaBox: {
     flex: 1,
     marginLeft: 12,
-    justifyContent: 'space-between',
+    marginRight: 8,
+    justifyContent: 'center',
   },
   foodName: {
     fontSize: 15,
     fontWeight: 'bold',
     color: '#2C3E50',
+    marginBottom: 4,
   },
-  foodRemarks: {
-    fontSize: 12,
-    color: '#E65100',
-    fontStyle: 'italic',
+  remarksBadge: {
     backgroundColor: '#FFF3E0',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     alignSelf: 'flex-start',
-    marginVertical: 4,
+    marginBottom: 6,
+    maxWidth: '95%',
   },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  remarksText: {
+    fontSize: 11,
+    color: '#E65100',
+    fontWeight: '600',
   },
-  foodPrice: {
-    fontSize: 13,
+  quantityMultiplier: {
+    fontSize: 12,
     color: '#7F8C8D',
+    fontWeight: '500',
   },
-  itemSubtotal: {
+  actionRightBlock: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 56,
+  },
+  itemTotalCost: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#2C3E50',
   },
-  checkoutFooter: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    paddingBottom: 28,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+  deleteButton: {
+    backgroundColor: '#FDEDEC',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
   },
-  priceSummaryRow: {
+  deleteIconText: {
+    fontSize: 14,
+  },
+  footerContainer: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F3F4',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  totalPriceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#7F8C8D',
     fontWeight: '500',
   },
-  totalAmount: {
+  totalValue: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#D35400',
   },
-  paymentButton: {
+  checkoutButton: {
     backgroundColor: '#D35400',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  paymentButtonText: {
+  checkoutButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',

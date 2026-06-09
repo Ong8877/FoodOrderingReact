@@ -4,9 +4,33 @@ import React, { useState, useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Text, StyleSheet } from 'react-native';
 import { getGlobalCart } from '../data/foodData';
+// 💡 IMPORT SYSTEM SPLASH CONTROLLER
+import * as SplashScreen from 'expo-splash-screen';
+
+// 💡 Prevent the splash screen from auto-hiding before our AppLayout component mounts safely
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* Prevent occasional native level promise rejections from crashing the thread */
+});
 
 export default function AppLayout() {
   const [cartCount, setCartCount] = useState<number>(0);
+
+  // 💡 UNLOCK THE SCREEN: Automatically hide the loader/splash once layout renders successfully
+  useEffect(() => {
+    const dismissSplash = async () => {
+      try {
+        // Optional: Gives a tiny 500ms pleasant breathing room to view the brand before transitioning
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        // 🚀 CRITICAL CORE COMMAND: Releases the splash lock container entirely
+        await SplashScreen.hideAsync();
+      }
+    };
+
+    dismissSplash();
+  }, []);
 
   // Poll global variables state periodically to ensure the basket badge increments automatically
   useEffect(() => {
