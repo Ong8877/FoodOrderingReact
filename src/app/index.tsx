@@ -81,7 +81,7 @@ export default function HomeScreen() {
     if (!selectedFoodItem) return;
 
     const currentCart = [...getGlobalCart()];
-    const formattedRemarks = remarks ? remarks.trim() : 'No special instructions';
+    const formattedRemarks = remarks ? remarks.trim() : 'No Remarks';
 
     const existingItemIndex = currentCart.findIndex(
       item => item.food.id === selectedFoodItem.id && item.remarks === formattedRemarks

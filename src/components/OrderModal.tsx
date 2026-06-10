@@ -172,7 +172,7 @@ export default function OrderModal({ visible, item, onClose, onAddToCart }: Orde
                   </View>
 
                   {/* Remarks Input Area */}
-                  <Text style={styles.sectionLabel}>Special Instructions</Text>
+                  <Text style={styles.sectionLabel}>Remarks</Text>
                   <TextInput
                     style={styles.remarksInput}
                     placeholder="E.g., No onions, extra spicy, sauce on side..."
