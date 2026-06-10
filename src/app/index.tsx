@@ -40,6 +40,7 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+  // 💡 CORE FIX: Refactored logic to perform precise filtering based strictly on food name
   const filterFoodMenu = (search: string, category: string) => {
     let rawData = FOOD_DATA;
 
@@ -51,9 +52,9 @@ export default function HomeScreen() {
     const cleanedSearch = search.trim().toLowerCase();
 
     if (cleanedSearch !== '') {
+      // 💡 REFACTORED: Removed item.description matching to prevent irrelevant search results
       rawData = rawData.filter(item =>
-        item.name.toLowerCase().includes(cleanedSearch) ||
-        item.description.toLowerCase().includes(cleanedSearch)
+        item.name.toLowerCase().includes(cleanedSearch)
       );
     }
 
